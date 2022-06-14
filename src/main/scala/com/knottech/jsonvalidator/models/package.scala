@@ -10,17 +10,18 @@ package com.knottech.jsonvalidator
 
 import eu.timepit.refined.api._
 import eu.timepit.refined.cats._
+import eu.timepit.refined.collection.NonEmpty
 import eu.timepit.refined.types.string.NonEmptyString
 
 package object models {
 
-  type GreetingTitle = NonEmptyString
-  object GreetingTitle extends RefinedTypeOps[GreetingTitle, String] with CatsRefinedTypeOpsSyntax
+  type SchemaId = String Refined NonEmpty
+  object SchemaId extends RefinedTypeOps[SchemaId, String] with CatsRefinedTypeOpsSyntax
 
-  type GreetingHeader = NonEmptyString
-  object GreetingHeader extends RefinedTypeOps[GreetingHeader, String] with CatsRefinedTypeOpsSyntax
+  type ErrorMessage = NonEmptyString
+  object ErrorMessage extends RefinedTypeOps[ErrorMessage, String] with CatsRefinedTypeOpsSyntax
 
-  type GreetingMessage = NonEmptyString
-  object GreetingMessage extends RefinedTypeOps[GreetingMessage, String] with CatsRefinedTypeOpsSyntax
+
+
 
 }

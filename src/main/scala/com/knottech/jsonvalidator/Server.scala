@@ -8,10 +8,12 @@
 
 package com.knottech.jsonvalidator
 
-import java.util.concurrent.{ ExecutorService, Executors }
-
+import java.util.concurrent.{ExecutorService, Executors}
 import cats.effect._
 import cats.implicits._
+import com.github.fge.jsonschema.SchemaVersion
+import com.github.fge.jsonschema.cfg.ValidationConfiguration
+import com.github.fge.jsonschema.main.{JsonSchemaFactory, JsonValidator}
 import com.typesafe.config._
 import com.knottech.jsonvalidator.api._
 import com.knottech.jsonvalidator.config._
@@ -22,8 +24,6 @@ import org.http4s.implicits._
 import org.http4s.server.Router
 import org.slf4j.LoggerFactory
 import pureconfig._
-import sttp.tapir.docs.openapi._
-import sttp.tapir.openapi.circe.yaml._
 import sttp.tapir.swagger.http4s.SwaggerHttp4s
 
 import scala.concurrent.ExecutionContext
@@ -48,11 +48,13 @@ object Server extends IOApp.WithContext {
       serviceConfig <- IO(
         ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY).loadOrThrow[ServiceConfig]
       )
+      validationConfig <- IO(
+        ConfigSource.fromConfig(config).at(ValidationConfig.CONFIG_KEY).loadOrThrow[ValidationConfig]
+      )
       _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
-      helloWorldRoutes = new HelloWorld[IO]
-      docs             = OpenAPIDocsInterpreter().toOpenAPI(List(HelloWorld.greetings), "json-validator", "1.0.0")
-      swagger          = new SwaggerHttp4s(docs.toYaml)
-      routes           = helloWorldRoutes.routes <+> swagger.routes[IO]
+      jsonValidationRoutes = new JsonSchemaAPI[IO](SchemaService.stub)
+      swagger          = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
+      routes           = jsonValidationRoutes.routes <+> swagger.routes[IO]
       httpApp          = Router("/" -> routes).orNotFound
       resource = EmberServerBuilder
         .default[IO]
