@@ -6,13 +6,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-package com.knottech.jsonvalidator
-
-import eu.timepit.refined.auto._
+package com.knottech.jsonvalidator.db
 
 import cats.effect.Sync
 import cats.implicits._
 import com.knottech.jsonvalidator.models.{JsonSchema, SchemaId}
+import eu.timepit.refined.auto._
 
 trait SchemaRepo[F[_]] {
 

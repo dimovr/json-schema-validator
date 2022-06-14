@@ -14,7 +14,7 @@ import cats.implicits._
 import com.typesafe.config._
 import com.knottech.jsonvalidator.api._
 import com.knottech.jsonvalidator.config._
-import com.knottech.jsonvalidator.db.FlywayDatabaseMigrator
+import com.knottech.jsonvalidator.db.{FlywayDatabaseMigrator, SchemaRepo}
 import eu.timepit.refined.auto._
 import org.http4s.ember.server._
 import org.http4s.implicits._

@@ -10,7 +10,8 @@ package com.knottech.jsonvalidator.api
 
 import cats.effect._
 import com.github.fge.jsonschema.SchemaVersion
-import com.knottech.jsonvalidator.{SchemaRepo, SchemaValidator}
+import com.knottech.jsonvalidator.SchemaValidator
+import com.knottech.jsonvalidator.db.SchemaRepo
 import com.knottech.jsonvalidator.models.JsonSchemaResponse._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
