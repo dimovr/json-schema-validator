@@ -8,7 +8,8 @@
 
 package com.knottech.jsonvalidator.repo
 
-import com.knottech.jsonvalidator.config.RepositoryConfig
+import cats.effect.IO
+import com.knottech.jsonvalidator.config.{ FilesystemConfig, RepositoryConfig }
 import com.knottech.jsonvalidator.models.{ JsonSchema, SchemaId }
 
 trait SchemaRepo[F[_]] {
@@ -19,7 +20,18 @@ trait SchemaRepo[F[_]] {
 }
 
 object SchemaRepo {
-  def apply[F[_]](
+
+  def apply(
       repoConfig: RepositoryConfig
-  ): SchemaRepo[F] = ???
+  ): IO[SchemaRepo[IO]] = {
+    import repoConfig._
+
+    def providerNotSupported(provider: RepositoryProvider) =
+      new IllegalArgumentException(s"Repository provider '$provider' is not supported")
+
+    provider match {
+      case FilesystemConfig.CONFIG_KEY => IO(new FilesystemSchemaRepo(filesystem))
+      case other                       => IO.raiseError(providerNotSupported(other))
+    }
+  }
 }

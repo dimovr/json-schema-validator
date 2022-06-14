@@ -11,7 +11,7 @@ package com.knottech.jsonvalidator.api
 import cats.effect._
 import com.github.fge.jsonschema.SchemaVersion
 import com.knottech.jsonvalidator.SchemaValidator
-import com.knottech.jsonvalidator.repo.{SchemaRepo, SchemaRepoStub}
+import com.knottech.jsonvalidator.repo.SchemaRepoStub
 import com.knottech.jsonvalidator.models.{JsonSchema, SchemaId}
 import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._

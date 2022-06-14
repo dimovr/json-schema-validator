@@ -47,10 +47,9 @@ object Server extends IOApp.WithContext {
       validationConfig <- IO(
         ConfigSource.fromConfig(config).at(ValidationConfig.CONFIG_KEY).loadOrThrow[ValidationConfig]
       )
-      jsonValidationRoutes = new JsonSchemaAPI[IO](
-        SchemaRepo(repoConfig),
-        SchemaValidator(validationConfig.schemaVersion)
-      )
+      schemaRepo <- SchemaRepo(repoConfig)
+      jsonValidationRoutes =
+        new JsonSchemaAPI[IO](schemaRepo, SchemaValidator(validationConfig.schemaVersion))
       swagger = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
       routes  = jsonValidationRoutes.routes <+> swagger.routes[IO]
       httpApp = Router("/" -> routes).orNotFound
