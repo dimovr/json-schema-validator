@@ -181,7 +181,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   }
 
   test("when parameter 'schema_id' is valid and body is valid for POST /schema/{schema_id}") {
-    val expectedStatusCode = HttpStatus.Ok
+    val expectedStatusCode = HttpStatus.Created
 
     val schemaId: NonEmptyString = "config-json"
     val schemaBody =
@@ -284,7 +284,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
     }
   }
   test("when parameter 'schema_id' is valid and body is valid for POST /validate/{schema_id}") {
-    val expectedStatusCode = HttpStatus.Ok
+    val expectedStatusCode = HttpStatus.Created
 
     val schemaId: NonEmptyString = "config-json"
     val schemaBody =

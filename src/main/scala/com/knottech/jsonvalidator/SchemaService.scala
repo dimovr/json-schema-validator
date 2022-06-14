@@ -46,7 +46,7 @@ object SchemaService {
     override def uploadSchema(id: SchemaId, schema: JsonSchema): F[Unit] =
       for {
         _ <- Sync[F].fromEither(io.circe.parser.parse(schema))
-        _ <- Sync[F].delay(schemas.addOne(id -> schema))
+        _ <- Sync[F].delay(schemas += id -> schema)
       } yield ()
 
     override def validate(schemaId: SchemaId, jsonToValidate: JsonObject): F[Boolean] =
