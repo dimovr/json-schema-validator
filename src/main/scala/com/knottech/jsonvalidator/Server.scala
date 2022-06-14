@@ -49,7 +49,7 @@ object Server extends IOApp.WithContext {
       )
       jsonValidationRoutes = new JsonSchemaAPI[IO](
         SchemaRepo.stub,
-        SchemaValidator.stub(validationConfig.schemaVersion)
+        SchemaValidator(validationConfig.schemaVersion)
       )
       swagger = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
       routes  = jsonValidationRoutes.routes <+> swagger.routes[IO]

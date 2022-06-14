@@ -11,7 +11,7 @@ package com.knottech.jsonvalidator.models
 import io.circe.syntax._
 import io.circe.parser.decode
 import eu.timepit.refined.auto._
-import com.knottech.jsonvalidator.models.JsonSchemaResponse._
+import com.knottech.jsonvalidator.models._
 import munit.FunSuite
 
 final class JsonResponseSchemaTest extends FunSuite {

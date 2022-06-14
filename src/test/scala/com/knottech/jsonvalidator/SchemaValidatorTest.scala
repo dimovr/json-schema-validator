@@ -18,7 +18,7 @@ import munit.FunSuite
 
 final class SchemaValidatorTest extends FunSuite {
 
-  private val validator = SchemaValidator.stub[IO](SchemaVersion.DRAFTV4)
+  private val validator = SchemaValidator[IO](SchemaVersion.DRAFTV4)
 
   test("fail if the schema is not a valid json ") {
     val document: JsonDocument = """{ "source": "/home/alice/image.iso", "destination": "/mnt/storage", "timeout": null, "chunks": { "size": 1024, "number": null } }"""

@@ -30,7 +30,7 @@ trait SchemaValidator[F[_]] {
 
 object SchemaValidator {
 
-  def stub[F[_]: Sync](version: SchemaVersion): SchemaValidator[F] =
+  def apply[F[_]: Sync](version: SchemaVersion): SchemaValidator[F] =
     new SchemaValidator[F] {
 
       private lazy val jsonSchemaValidator: JsonValidator = {

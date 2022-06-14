@@ -13,14 +13,13 @@ import cats.effect._
 import cats.implicits._
 import com.knottech.jsonvalidator.SchemaValidator
 import com.knottech.jsonvalidator.db.SchemaRepo
-import com.knottech.jsonvalidator.models.JsonSchemaResponse.{ UploadError, UploadSuccess, ValidationSuccess }
-import com.knottech.jsonvalidator.models.{ JsonSchema, _ }
+import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
 import org.http4s._
 import org.http4s.dsl._
 import sttp.model._
-import sttp.tapir._
+import sttp.tapir.{ ValidationError => TapirValidationError, _ }
 import sttp.tapir.generic.auto._
 import sttp.tapir.codec.refined._
 import sttp.tapir.docs.openapi.OpenAPIDocsInterpreter
@@ -56,8 +55,8 @@ final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
 
   private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]()
     .toRoutes(JsonSchemaAPI.validate) { case (id, document) =>
-      def validationSuccess            = ValidationSuccess(id).asRight[JsonSchemaResponse.ValidationError]
-      def validationError(msg: String) = JsonSchemaResponse.ValidationError(id, msg).asLeft[ValidationSuccess]
+      def validationSuccess            = ValidationSuccess(id).asRight[ValidationError]
+      def validationError(msg: String) = ValidationError(id, msg).asLeft[ValidationSuccess]
 
       val result = for {
         schemaOpt <- repo.find(id)
@@ -114,8 +113,8 @@ object JsonSchemaAPI {
 
   val validate: Endpoint[
     (SchemaId, JsonDocument),
-    JsonSchemaResponse.ValidationError,
-    JsonSchemaResponse.ValidationSuccess,
+    ValidationError,
+    ValidationSuccess,
     Any
   ] =
     endpoint.post
@@ -123,15 +122,15 @@ object JsonSchemaAPI {
       .in(path[SchemaId]("schema_id"))
       .in(plainBody[JsonDocument].description("A JSON object to be validated"))
       .out(
-        jsonBody[JsonSchemaResponse.ValidationSuccess]
+        jsonBody[ValidationSuccess]
           .description("Successful JSON schema validation response")
       )
       .out(statusCode(StatusCode.Created))
       .errorOut(statusCode(StatusCode.BadRequest))
       .errorOut(
-        jsonBody[JsonSchemaResponse.ValidationError]
+        jsonBody[ValidationError]
           .description("A JSON validation error")
-          .example(JsonSchemaResponse.ValidationError("config-json", "missing field"))
+          .example(ValidationError("config-json", "missing field"))
       )
       .description(
         "Returns a simple JSON response representing the status of the action (success/error)"

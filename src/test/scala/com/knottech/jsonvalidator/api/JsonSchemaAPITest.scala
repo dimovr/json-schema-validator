@@ -12,7 +12,8 @@ import cats.effect._
 import com.github.fge.jsonschema.SchemaVersion
 import com.knottech.jsonvalidator.SchemaValidator
 import com.knottech.jsonvalidator.db.SchemaRepo
-import com.knottech.jsonvalidator.models.JsonSchemaResponse._
+import com.knottech.jsonvalidator.models.{JsonSchema, SchemaId}
+import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
 import io.circe.Json
@@ -29,7 +30,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
     EntityDecoder.text.map(NonEmptyString.unsafeFrom)
 
   private def schemaVersion = SchemaVersion.DRAFTV4
-  private def validator = SchemaValidator.stub[IO](schemaVersion)
+  private def validator = SchemaValidator[IO](schemaVersion)
   
   // GET /schema/{schema_id}
   test("when parameter 'schema_id' is missing for GET /schema/{schema_id}") {
@@ -79,24 +80,26 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is valid for GET /schema/{schema_id}") {
     val expectedStatusCode = HttpStatus.Ok
 
-    val schemaId: NonEmptyString = "config-json"
-    val expectedSchemaResponse = Json.fromString(
+    val schemaId: SchemaId = "config-json"
+    val schema: JsonSchema =
       """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
-    )
+    val expectedSchemaResponse = Json.fromString(schema)
 
     Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, validator).routes)
+        val repo = SchemaRepo.stub[IO]
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](repo, validator).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
         )
         val response = service.orNotFound.run(request)
         val test = for {
+          _ <- repo.upsert(schemaId, schema)
           result <- response
-          body   <- result.as[NonEmptyString]
+          body   <- result.as[JsonSchema]
         } yield (result.status, Json.fromString(body))
         test.assertEquals((expectedStatusCode, expectedSchemaResponse))
     }
@@ -155,7 +158,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is valid BUT body is INVALID for POST /schema/{schema_id}") {
     val expectedStatusCode = HttpStatus.BadRequest
 
-    val schemaId: NonEmptyString = "config-json"
+    val schemaId: SchemaId= "config-json"
     val schemaBody = "invalid-json"
 
     Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
@@ -182,7 +185,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is valid and body is valid for POST /schema/{schema_id}") {
     val expectedStatusCode = HttpStatus.Created
 
-    val schemaId: NonEmptyString = "config-json"
+    val schemaId: SchemaId= "config-json"
     val schemaBody =
       """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
 
@@ -259,7 +262,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is valid and body is NOT a valid json for POST /validate/{schema_id}") {
     val expectedStatusCode = HttpStatus.BadRequest
 
-    val schemaId: NonEmptyString = "config-json"
+    val schemaId: SchemaId= "config-json"
     val schemaBody = "abc"
 
     Uri.fromString(Uri.encode(s"/validate/$schemaId")) match {
@@ -285,9 +288,8 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is valid and body is valid for POST /validate/{schema_id}") {
     val expectedStatusCode = HttpStatus.Created
 
-    val schemaId: NonEmptyString = "config-json"
-    val schemaBody =
-      """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
+    val schemaId: SchemaId = "config-json"
+    val document = """{ "source": "/home/alice/image.iso", "destination": "/mnt/storage", "timeout": null, "chunks": { "size": 1024, "number": null } }"""
 
     Uri.fromString(Uri.encode(s"/validate/$schemaId")) match {
       case Left(e) =>
@@ -298,12 +300,12 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
-        ).withEntity(schemaBody)
+        ).withEntity(document)
 
         val expectedResponse = ValidationSuccess(schemaId)
 
         val response = service.orNotFound.run(request)
-        val schema: NonEmptyString =
+        val schema: JsonSchema =
           """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
 
         val test = for {
