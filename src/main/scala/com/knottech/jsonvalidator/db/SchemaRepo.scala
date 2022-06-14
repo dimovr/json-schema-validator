@@ -10,7 +10,7 @@ package com.knottech.jsonvalidator.db
 
 import cats.effect.Sync
 import cats.implicits._
-import com.knottech.jsonvalidator.models.{JsonSchema, SchemaId}
+import com.knottech.jsonvalidator.models.{ JsonSchema, SchemaId }
 import eu.timepit.refined.auto._
 
 trait SchemaRepo[F[_]] {
@@ -22,23 +22,24 @@ trait SchemaRepo[F[_]] {
 
 object SchemaRepo {
 
-  def stub[F[_]: Sync]: SchemaRepo[F] = new SchemaRepo[F] {
+  def stub[F[_]: Sync]: SchemaRepo[F] =
+    new SchemaRepo[F] {
 
-    private val schemaId: SchemaId = "config-json"
-    private val schema: JsonSchema = """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
+      private val schemaId: SchemaId = "config-json"
+      private val schema: JsonSchema =
+        """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
 
-    import scala.collection.mutable.{Map => MutMap}
-    private val schemas: MutMap[SchemaId, JsonSchema] = MutMap(schemaId -> schema)
+      import scala.collection.mutable.{ Map => MutMap }
+      private val schemas: MutMap[SchemaId, JsonSchema] = MutMap(schemaId -> schema)
 
-    override def find(id: SchemaId): F[Option[JsonSchema]] =
-      Sync[F].delay(schemas.get(id))
+      override def find(id: SchemaId): F[Option[JsonSchema]] = Sync[F].delay(schemas.get(id))
 
-    override def upsert(id: SchemaId, schema: JsonSchema): F[Unit] =
-      for {
-        _ <- Sync[F].fromEither(io.circe.parser.parse(schema))
-        _ <- Sync[F].delay(schemas += id -> schema)
-      } yield ()
+      override def upsert(id: SchemaId, schema: JsonSchema): F[Unit] =
+        for {
+          _ <- Sync[F].fromEither(io.circe.parser.parse(schema))
+          _ <- Sync[F].delay(schemas += id -> schema)
+        } yield ()
 
-  }
+    }
 
 }

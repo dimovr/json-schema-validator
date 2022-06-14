@@ -28,8 +28,8 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
   implicit def decodeNonEmptyString[F[_]: Sync]: EntityDecoder[F, NonEmptyString] =
     EntityDecoder.text.map(NonEmptyString.unsafeFrom)
 
-  private val schemaVersion = SchemaVersion.DRAFTV4
-  private val validator = SchemaValidator.stub[IO](schemaVersion)
+  private def schemaVersion = SchemaVersion.DRAFTV4
+  private def validator = SchemaValidator.stub[IO](schemaVersion)
   
   // GET /schema/{schema_id}
   test("when parameter 'schema_id' is missing for GET /schema/{schema_id}") {

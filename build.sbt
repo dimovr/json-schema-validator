@@ -49,7 +49,7 @@ inThisBuild(
       "-Ycache-macro-class-loader:last-modified",
     ),
     Compile / console / scalacOptions --= Seq(
-      "-Xfatal-warnings",
+//      "-Xfatal-warnings",
       "-Ywarn-unused-import",
       "-Ywarn-unused:implicits",
       "-Ywarn-unused:imports",

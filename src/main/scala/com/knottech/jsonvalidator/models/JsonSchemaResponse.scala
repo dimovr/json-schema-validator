@@ -29,14 +29,14 @@ object JsonSchemaResponse {
 
   case class UploadSuccess private (action: Action, id: SchemaId, status: Status) extends JsonSchemaResponse
   object UploadSuccess {
-    def apply(id: SchemaId): UploadSuccess =
-      UploadSuccess(Action.UploadSchema, id, Status.Success)
+    def apply(id: SchemaId): UploadSuccess = UploadSuccess(Action.UploadSchema, id, Status.Success)
 
     implicit val encoder: Encoder[UploadSuccess] = deriveEncoder
     implicit val decoder: Decoder[UploadSuccess] = deriveDecoder
   }
 
-  case class UploadError private (action: Action, id: SchemaId, status: Status, message: ErrorMessage) extends JsonSchemaResponse
+  case class UploadError private (action: Action, id: SchemaId, status: Status, message: ErrorMessage)
+      extends JsonSchemaResponse
   object UploadError {
     def apply(id: SchemaId, message: ErrorMessage): UploadError =
       UploadError(Action.UploadSchema, id, Status.Error, message)
@@ -47,16 +47,17 @@ object JsonSchemaResponse {
 
   case class ValidationSuccess private (action: Action, id: SchemaId, status: Status) extends JsonSchemaResponse
   object ValidationSuccess {
-    def apply(id: SchemaId): ValidationSuccess =
-      ValidationSuccess(Action.ValidateDocument, id, Status.Success)
+    def apply(id: SchemaId): ValidationSuccess = ValidationSuccess(Action.ValidateDocument, id, Status.Success)
 
     implicit val encoder: Encoder[ValidationSuccess] = deriveEncoder
     implicit val decoder: Decoder[ValidationSuccess] = deriveDecoder
   }
 
-  case class ValidationError private (action: Action, id: SchemaId, status: Status, message: ErrorMessage) extends JsonSchemaResponse
+  case class ValidationError private (action: Action, id: SchemaId, status: Status, message: String)
+      extends JsonSchemaResponse
+//  case class ValidationError private (action: Action, id: SchemaId, status: Status, message: ErrorMessage) extends JsonSchemaResponse
   object ValidationError {
-    def apply(id: SchemaId, message: ErrorMessage): ValidationError =
+    def apply(id: SchemaId, message: String): ValidationError =
       ValidationError(Action.ValidateDocument, id, Status.Error, message)
 
     implicit val encoder: Encoder[ValidationError] = deriveEncoder

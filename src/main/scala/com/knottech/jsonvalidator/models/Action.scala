@@ -8,7 +8,7 @@
 
 package com.knottech.jsonvalidator.models
 
-import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
+import enumeratum.values.{ StringCirceEnum, StringEnum, StringEnumEntry }
 
 sealed abstract class Action(val value: String) extends StringEnumEntry
 object Action extends StringEnum[Action] with StringCirceEnum[Action] {

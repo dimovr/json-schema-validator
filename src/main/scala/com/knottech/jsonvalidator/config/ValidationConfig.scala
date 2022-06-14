@@ -27,5 +27,3 @@ object ValidationConfig {
   implicit val configReader: ConfigReader[ValidationConfig] = deriveReader[ValidationConfig]
 
 }
-
-

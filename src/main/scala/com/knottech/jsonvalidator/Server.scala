@@ -8,7 +8,7 @@
 
 package com.knottech.jsonvalidator
 
-import java.util.concurrent.{ExecutorService, Executors}
+import java.util.concurrent.{ ExecutorService, Executors }
 import cats.effect._
 import cats.implicits._
 import com.typesafe.config._
@@ -34,7 +34,7 @@ object Server extends IOApp.WithContext {
   override protected def executionContextResource: Resource[SyncIO, ExecutionContext] = Resource.eval(SyncIO(ec))
 
   override def run(args: List[String]): IO[ExitCode] = {
-    val blocker  = Blocker.liftExecutorService(blockingPool)
+    val blocker = Blocker.liftExecutorService(blockingPool)
 
     val program = for {
       config <- IO(ConfigFactory.load(getClass().getClassLoader()))
@@ -51,9 +51,9 @@ object Server extends IOApp.WithContext {
         SchemaRepo.stub,
         SchemaValidator.stub(validationConfig.schemaVersion)
       )
-      swagger          = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
-      routes           = jsonValidationRoutes.routes <+> swagger.routes[IO]
-      httpApp          = Router("/" -> routes).orNotFound
+      swagger = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
+      routes  = jsonValidationRoutes.routes <+> swagger.routes[IO]
+      httpApp = Router("/" -> routes).orNotFound
       resource = EmberServerBuilder
         .default[IO]
         .withBlocker(blocker)
