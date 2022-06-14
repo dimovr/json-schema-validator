@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-package com.knottech.jsonvalidator.db
+package com.knottech.jsonvalidator.repo
 
 import eu.timepit.refined.auto._
 import cats.effect.IO
@@ -16,7 +16,7 @@ import munit.FunSuite
 
 final class SchemaRepoTest extends FunSuite {
 
-  private val repo = SchemaRepo.stub[IO]
+  private val repo = new SchemaRepoStub[IO]
 
   test("repo should get None if there is no schema for given id") {
     assert(

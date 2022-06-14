@@ -8,7 +8,7 @@
 
 package com.knottech.jsonvalidator.config
 
-import com.knottech.jsonvalidator.db._
+import com.knottech.jsonvalidator.repo._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.pureconfig._
 import pureconfig._

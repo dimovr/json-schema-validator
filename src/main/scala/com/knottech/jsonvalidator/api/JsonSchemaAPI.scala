@@ -12,7 +12,7 @@ import cats.data.Validated
 import cats.effect._
 import cats.implicits._
 import com.knottech.jsonvalidator.SchemaValidator
-import com.knottech.jsonvalidator.db.SchemaRepo
+import com.knottech.jsonvalidator.repo.SchemaRepo
 import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
@@ -139,6 +139,6 @@ object JsonSchemaAPI {
   private val endpoints = List(getSchema, uploadSchema, validate)
 
   lazy val openApiDocs: String =
-    OpenAPIDocsInterpreter().toOpenAPI(endpoints, "json-schema-validator", "1.0.0").toYaml
+    OpenAPIDocsInterpreter().toOpenAPI(endpoints, "json-schema-validator", "0.0.1").toYaml
 
 }

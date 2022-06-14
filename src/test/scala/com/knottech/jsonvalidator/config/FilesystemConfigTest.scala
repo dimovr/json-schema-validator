@@ -8,18 +8,18 @@
 
 package com.knottech.jsonvalidator.config
 
-import eu.timepit.refined.auto._
 import com.typesafe.config.ConfigFactory
+import eu.timepit.refined.auto._
 import munit._
 import pureconfig._
 
-class DatabaseConfigTest extends FunSuite {
+class FilesystemConfigTest extends FunSuite {
 
-  test("DatabaseConfig must load the default application.conf correctly") {
+  test("FilesystemConfig must load the default application.conf correctly") {
     val cfg = ConfigFactory.load(getClass().getClassLoader())
-    ConfigSource.fromConfig(cfg).at(RepositoryConfig.CONFIG_KEY + "." + DatabaseConfig.CONFIG_KEY).load[DatabaseConfig] match {
+    ConfigSource.fromConfig(cfg).at(RepositoryConfig.CONFIG_KEY + "." + FilesystemConfig.CONFIG_KEY).load[FilesystemConfig] match {
       case Left(e)  => fail(e.toList.mkString(", "))
-      case Right(_) => assert(true)
+      case Right(conf) => assert(conf.directory.value == "~/.json-schema-validator/")
     }
   }
 

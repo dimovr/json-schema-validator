@@ -14,7 +14,14 @@ import eu.timepit.refined.cats._
 import eu.timepit.refined.string._
 import eu.timepit.refined.types.string.NonEmptyString
 
-package object db {
+package object repo {
+
+  type RepositoryProvider = NonEmptyString
+  object RepositoryProvider extends RefinedTypeOps[RepositoryProvider, String] with CatsRefinedTypeOpsSyntax
+
+  type DirectoryName = NonEmptyString
+  object DirectoryName extends RefinedTypeOps[DirectoryName, String] with CatsRefinedTypeOpsSyntax
+
   type JDBCDriverName =
     String Refined MatchesRegex[W.`"^\\\\w+\\\\.[\\\\w\\\\d\\\\.]+[\\\\w\\\\d]+$"`.T]
   object JDBCDriverName extends RefinedTypeOps[JDBCDriverName, String] with CatsRefinedTypeOpsSyntax

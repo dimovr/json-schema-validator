@@ -14,7 +14,7 @@ import cats.implicits._
 import com.typesafe.config._
 import com.knottech.jsonvalidator.api._
 import com.knottech.jsonvalidator.config._
-import com.knottech.jsonvalidator.db.SchemaRepo
+import com.knottech.jsonvalidator.repo.SchemaRepo
 import eu.timepit.refined.auto._
 import org.http4s.ember.server._
 import org.http4s.implicits._
@@ -38,8 +38,8 @@ object Server extends IOApp.WithContext {
 
     val program = for {
       config <- IO(ConfigFactory.load(getClass().getClassLoader()))
-      dbConfig <- IO(
-        ConfigSource.fromConfig(config).at(DatabaseConfig.CONFIG_KEY).loadOrThrow[DatabaseConfig]
+      repoConfig <- IO(
+        ConfigSource.fromConfig(config).at(RepositoryConfig.CONFIG_KEY).loadOrThrow[RepositoryConfig]
       )
       serviceConfig <- IO(
         ConfigSource.fromConfig(config).at(ServiceConfig.CONFIG_KEY).loadOrThrow[ServiceConfig]
@@ -48,7 +48,7 @@ object Server extends IOApp.WithContext {
         ConfigSource.fromConfig(config).at(ValidationConfig.CONFIG_KEY).loadOrThrow[ValidationConfig]
       )
       jsonValidationRoutes = new JsonSchemaAPI[IO](
-        SchemaRepo.stub,
+        SchemaRepo(repoConfig),
         SchemaValidator(validationConfig.schemaVersion)
       )
       swagger = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)

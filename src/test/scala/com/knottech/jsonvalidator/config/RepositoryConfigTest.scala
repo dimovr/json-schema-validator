@@ -8,18 +8,18 @@
 
 package com.knottech.jsonvalidator.config
 
-import eu.timepit.refined.auto._
 import com.typesafe.config.ConfigFactory
+import eu.timepit.refined.auto._
 import munit._
 import pureconfig._
 
-class DatabaseConfigTest extends FunSuite {
+class RepositoryConfigTest extends FunSuite {
 
-  test("DatabaseConfig must load the default application.conf correctly") {
+  test("RepositoryConfig must load the default application.conf correctly") {
     val cfg = ConfigFactory.load(getClass().getClassLoader())
-    ConfigSource.fromConfig(cfg).at(RepositoryConfig.CONFIG_KEY + "." + DatabaseConfig.CONFIG_KEY).load[DatabaseConfig] match {
+    ConfigSource.fromConfig(cfg).at(RepositoryConfig.CONFIG_KEY).load[RepositoryConfig] match {
       case Left(e)  => fail(e.toList.mkString(", "))
-      case Right(_) => assert(true)
+      case Right(conf) => assert(conf.provider.value == "filesystem")
     }
   }
 
