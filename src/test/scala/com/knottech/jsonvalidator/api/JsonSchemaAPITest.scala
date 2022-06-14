@@ -24,9 +24,10 @@ import org.http4s.server.Router
 class JsonSchemaAPITest extends CatsEffectSuite {
 
   implicit def decodeJsonSchemaResponse: EntityDecoder[IO, JsonSchemaResponse] = jsonOf
+  implicit def decodeDummyResponse: EntityDecoder[IO, DummyResponse] = jsonOf
 
   test("when parameter 'schema_id' is missing") {
-    val expectedStatusCode = HttpStatus.BadRequest
+    val expectedStatusCode = HttpStatus.NotFound
 
     Uri.fromString("/schema") match {
       case Left(_) =>
@@ -42,12 +43,12 @@ class JsonSchemaAPITest extends CatsEffectSuite {
           result <- response
           body   <- result.as[String]
         } yield (result.status, body)
-        test.assertEquals((expectedStatusCode, "Invalid value for: query parameter schema_id"))
+        test.assertEquals((expectedStatusCode, "Not found"))
     }
   }
 
   test("when parameter 'schema_id' is invalid") {
-    val expectedStatusCode = HttpStatus.BadRequest
+    val expectedStatusCode = HttpStatus.NotFound
 
     Uri.fromString("/schema/") match {
       case Left(e) =>
@@ -64,10 +65,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
           body   <- result.as[String]
         } yield (result.status, body)
         test.assertEquals(
-          (
-            expectedStatusCode,
-            "Invalid value for: query parameter id (expected value to have length greater than or equal to 1, but was )"
-          )
+          (expectedStatusCode, "Not found")
         )
     }
   }
@@ -75,12 +73,12 @@ class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is valid") {
     val expectedStatusCode = HttpStatus.Ok
 
-    val id: NonEmptyString = "config-json"
+    val schemaId: NonEmptyString = "config-json"
     val expectedSchemaResponse = Json.fromString(
       """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
     )
 
-    Uri.fromString(Uri.encode(s"/schema/$id")) match {
+    Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(u) =>
@@ -92,8 +90,8 @@ class JsonSchemaAPITest extends CatsEffectSuite {
         val response = service.orNotFound.run(request)
         val test = for {
           result <- response
-          body   <- result.as[Json]
-        } yield (result.status, body)
+          body   <- result.as[DummyResponse]
+        } yield (result.status, Json.fromString(body.schema))
         test.assertEquals((expectedStatusCode, expectedSchemaResponse))
     }
   }

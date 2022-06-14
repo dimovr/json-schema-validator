@@ -8,6 +8,7 @@
 
 package com.knottech.jsonvalidator.config
 
+import com.github.fge.jsonschema.SchemaVersion
 import com.typesafe.config.ConfigFactory
 import eu.timepit.refined.auto._
 import munit._
@@ -19,7 +20,7 @@ class ValidationConfigTest extends FunSuite {
     val cfg = ConfigFactory.load(getClass().getClassLoader())
     ConfigSource.fromConfig(cfg).at(ValidationConfig.CONFIG_KEY).load[ValidationConfig] match {
       case Left(e)  => fail(e.toList.mkString(", "))
-      case Right(_) => assert(true)
+      case Right(config) => assert(config.schemaVersion == SchemaVersion.DRAFTV4)
     }
   }
 

@@ -36,9 +36,9 @@ final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
 
   private val getSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.getSchema) { id =>
 
-    val maybeSchema = service.findSchema(id)
+    val maybeSchema = service.findSchema(id).map(DummyResponse.apply)
 
-    Sync[F].delay(maybeSchema.fold(StatusCode.NotFound.asLeft[String])(_.asRight[StatusCode]))
+    Sync[F].delay(maybeSchema.fold(StatusCode.BadRequest.asLeft[DummyResponse])(_.asRight[StatusCode]))
   }
 
   val routes: HttpRoutes[F] = getSchema
@@ -47,12 +47,14 @@ final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
 
 object JsonSchemaAPI {
 
-  val getSchema: Endpoint[NonEmptyString, StatusCode, String, Any] =
+//  val getSchema: Endpoint[NonEmptyString, StatusCode, String, Any] =
+  val getSchema: Endpoint[NonEmptyString, StatusCode, DummyResponse, Any] =
     endpoint.get
       .in("schema")
-      .in(query[NonEmptyString]("schema_id"))
+      .in(path[NonEmptyString]("schema_id"))
       .errorOut(statusCode)
-      .out(stringBody.description("A JSON schema object"))
+//      .out(stringBody.description("A JSON schema object"))
+      .out(jsonBody[DummyResponse].description("A JSON schema object"))
       .description(
         "Returns a JSON object representing the schema if it's found for the provided id"
       )
@@ -60,7 +62,7 @@ object JsonSchemaAPI {
   val uploadSchema: Endpoint[(NonEmptyString, NonEmptyString), StatusCode, JsonSchemaResponse, Any] =
     endpoint.post
       .in("schema")
-      .in(query[NonEmptyString]("schema_id"))
+      .in(path[NonEmptyString]("schema_id"))
       .in(plainBody[NonEmptyString].description("A JSON schema object"))
       .errorOut(statusCode)
       .out(
@@ -73,7 +75,7 @@ object JsonSchemaAPI {
   val validateSchema: Endpoint[NonEmptyString, StatusCode, JsonSchemaResponse, Any] =
     endpoint.post
       .in("validate")
-      .in(query[NonEmptyString]("schema_id"))
+      .in(path[NonEmptyString]("schema_id"))
       .errorOut(statusCode)
       .out(
         jsonBody[JsonSchemaResponse].description("A JSON validation response").example(JsonSchemaResponse.ValidationError("config-json", "missing field"))
