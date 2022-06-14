@@ -127,7 +127,7 @@ object JsonSchemaAPI {
         jsonBody[ValidationSuccess]
           .description("Successful JSON schema validation response")
       )
-      .out(statusCode(StatusCode.Created))
+      .out(statusCode(StatusCode.Ok))
       .errorOut(statusCode(StatusCode.BadRequest))
       .errorOut(
         jsonBody[ValidationError]

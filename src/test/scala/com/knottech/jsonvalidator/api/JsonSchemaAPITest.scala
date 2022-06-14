@@ -286,7 +286,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
     }
   }
   test("when parameter 'schema_id' is valid and body is valid for POST /validate/{schema_id}") {
-    val expectedStatusCode = HttpStatus.Created
+    val expectedStatusCode = HttpStatus.Ok
 
     val schemaId: SchemaId = "config-json"
     val document = """{ "source": "/home/alice/image.iso", "destination": "/mnt/storage", "timeout": null, "chunks": { "size": 1024, "number": null } }"""
