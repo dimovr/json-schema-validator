@@ -8,20 +8,17 @@
 
 package com.knottech.jsonvalidator
 
-import cats.effect.IO
-import eu.timepit.refined.types.string.NonEmptyString
 import eu.timepit.refined.auto._
+import cats.effect.IO
+import com.knottech.jsonvalidator.models._
 import munit.FunSuite
 
+final class SchemaValidator extends FunSuite {
 
-final class SchemaServiceTest extends FunSuite {
+  private val validator = SchemaValidator.stub[IO]
 
-  private val existingSchemaId: NonEmptyString = "1"
-  private val jsonSchema: NonEmptyString = "{}"
-
-//  test("get schema for existing id should return success response") {
-//
-//
-//  }
+  test("validation should fail for invalid json schema and valid document") {
+    val document: JsonDocument = """{}"""
+  }
 
 }

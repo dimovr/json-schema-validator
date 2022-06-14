@@ -14,7 +14,7 @@ import cats.implicits._
 import com.typesafe.config._
 import com.knottech.jsonvalidator.api._
 import com.knottech.jsonvalidator.config._
-import com.knottech.jsonvalidator.db.{FlywayDatabaseMigrator, SchemaRepo}
+import com.knottech.jsonvalidator.db.SchemaRepo
 import eu.timepit.refined.auto._
 import org.http4s.ember.server._
 import org.http4s.implicits._
@@ -35,7 +35,6 @@ object Server extends IOApp.WithContext {
 
   override def run(args: List[String]): IO[ExitCode] = {
     val blocker  = Blocker.liftExecutorService(blockingPool)
-    val migrator = new FlywayDatabaseMigrator
 
     val program = for {
       config <- IO(ConfigFactory.load(getClass().getClassLoader()))
@@ -48,7 +47,6 @@ object Server extends IOApp.WithContext {
       validationConfig <- IO(
         ConfigSource.fromConfig(config).at(ValidationConfig.CONFIG_KEY).loadOrThrow[ValidationConfig]
       )
-      _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
       jsonValidationRoutes = new JsonSchemaAPI[IO](
         SchemaRepo.stub,
         SchemaValidator.stub(validationConfig.schemaVersion)

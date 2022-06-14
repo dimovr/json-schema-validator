@@ -54,14 +54,14 @@ final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
     }
 
   private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]()
-    .toRoutes(JsonSchemaAPI.validate) { case (id, schema) =>
+    .toRoutes(JsonSchemaAPI.validate) { case (id, document) =>
       def validationSuccess = ValidationSuccess(id).asRight[JsonSchemaResponse.ValidationError]
       def validationError = JsonSchemaResponse.ValidationError(id, "validation failed").asLeft[ValidationSuccess]
 
       val result = for {
         schemaOpt <- repo.find(id)
         schema    <- Sync[F].fromOption(schemaOpt, new RuntimeException("missing schema"))
-        valid     <- validator.validate(id, schema)
+        valid     <- validator.validate(schema, document)
       } yield if (valid) validationSuccess else validationError
 
       result.recoverWith {
@@ -108,11 +108,11 @@ object JsonSchemaAPI {
         "Returns a simple JSON response representing the status of the action (success/error)"
       )
 
-  val validate: Endpoint[(SchemaId, JsonObject), JsonSchemaResponse.ValidationError, JsonSchemaResponse.ValidationSuccess, Any] =
+  val validate: Endpoint[(SchemaId, JsoDocument), JsonSchemaResponse.ValidationError, JsonSchemaResponse.ValidationSuccess, Any] =
     endpoint.post
       .in("validate")
       .in(path[SchemaId]("schema_id"))
-      .in(plainBody[JsonObject].description("A JSON object to be validated"))
+      .in(plainBody[JsoDocument].description("A JSON object to be validated"))
       .out(
         jsonBody[JsonSchemaResponse.ValidationSuccess]
           .description("Successful JSON schema validation response")

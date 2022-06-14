@@ -20,8 +20,8 @@ package object models {
   type JsonSchema = NonEmptyString
   object JsonSchema extends RefinedTypeOps[JsonSchema, String] with CatsRefinedTypeOpsSyntax
 
-  type JsonObject = NonEmptyString
-  object JsonObject extends RefinedTypeOps[JsonObject, String] with CatsRefinedTypeOpsSyntax
+  type JsoDocument = NonEmptyString
+  object JsonDocument extends RefinedTypeOps[JsoDocument, String] with CatsRefinedTypeOpsSyntax
 
   type ErrorMessage = NonEmptyString
   object ErrorMessage extends RefinedTypeOps[ErrorMessage, String] with CatsRefinedTypeOpsSyntax

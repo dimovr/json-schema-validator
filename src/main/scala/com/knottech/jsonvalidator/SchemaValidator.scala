@@ -14,11 +14,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.fge.jsonschema.SchemaVersion
 import com.github.fge.jsonschema.cfg.ValidationConfiguration
 import com.github.fge.jsonschema.main.{JsonSchemaFactory, JsonValidator}
-import com.knottech.jsonvalidator.models.{JsonObject, JsonSchema}
+import com.knottech.jsonvalidator.models.{JsoDocument, JsonSchema}
 
 trait SchemaValidator[F[_]] {
 
-  def validate(schema: JsonSchema, document: JsonObject): F[Boolean]
+  def validate(schema: JsonSchema, document: JsoDocument): F[Boolean]
 
 }
 
@@ -31,7 +31,7 @@ object SchemaValidator {
       JsonSchemaFactory.newBuilder().setValidationConfiguration(config).freeze.getValidator
     }
 
-    override def validate(schema: JsonSchema, document: JsonObject): F[Boolean] =
+    override def validate(schema: JsonSchema, document: JsoDocument): F[Boolean] =
       Sync[F].delay {
         val documentJson    = (new ObjectMapper).readTree(document)
         val schemaJson  = (new ObjectMapper).readTree(schema)
