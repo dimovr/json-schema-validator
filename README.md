@@ -6,9 +6,9 @@ This REST-service allows users to upload JSON Schemas and store them at unique U
 
 Additionally, this service will "cleans" every JSON document before validation: removes keys for which the value is `null`.
 
-The validation is performed using a 3-rd pary library `json-schema-validator`[https://github.com/java-json-tools/json-schema-validator]. 
+The validation is performed using a 3-rd pary library [json-schema-validator](https://github.com/java-json-tools/json-schema-validator). 
 
-## Prerequisites
+## Pre-requisites
 
 ## System requirements ##
 
@@ -146,7 +146,9 @@ The server should "clean" the uploaded JSON document to remove keys for which th
 The server should respond with: `{"action": "validateDocument", "id": "config-schema", "status": "success"}` and status code `200`
 
 
-## License ##
+## License & Copyright ##
+
+The project was created based on the following [gitter template](https://codeberg.org/wegtam/http4s-app.g8).
 
 This code is licensed under the Mozilla Public License Version 2.0, see the
 [LICENSE](LICENSE) file for details.
