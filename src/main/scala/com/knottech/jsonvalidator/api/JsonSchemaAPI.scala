@@ -11,12 +11,11 @@ package com.knottech.jsonvalidator.api
 import cats.effect._
 import cats.implicits._
 import com.knottech.jsonvalidator.SchemaService
-import com.knottech.jsonvalidator.models.JsonSchemaResponse.UploadSuccess
+import com.knottech.jsonvalidator.models.JsonSchemaResponse.{UploadError, UploadSuccess, ValidationSuccess}
 import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
 import org.http4s._
-import org.http4s.circe._
 import org.http4s.dsl._
 import sttp.model._
 import sttp.tapir._
@@ -31,71 +30,90 @@ final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
     service: SchemaService[F]
 ) extends Http4sDsl[F] {
 
-  implicit def decodeJsonSchemaResponse: EntityDecoder[F, JsonSchemaResponse] = jsonOf
-  implicit def encodeJsonSchemaResponse: EntityEncoder[F, JsonSchemaResponse] = jsonEncoderOf
-
   private val getSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.getSchema) { id =>
     for {
       maybeSchema <- service.findSchema(id)
-      schema = maybeSchema.map(DummyResponse.apply)
       result <- Sync[F].delay(
-        schema.fold(StatusCode.BadRequest.asLeft[DummyResponse])(_.asRight[StatusCode])
+        maybeSchema.fold(StatusCode.NotFound.asLeft[NonEmptyString])(_.asRight[StatusCode])
       )
     } yield result
   }
-//
-//  private val uploadSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.uploadSchema) { case (id, schema) =>
-//
-//    val schemaUpload = Some(service.uploadSchema(id, schema))
-//
-//    Sync[F].delay(schemaUpload.fold(StatusCode.BadRequest.asLeft[Unit])(_.asRight[StatusCode]))
-//  }
-//
-//  private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.validate) { case (id, schema) =>
-//
-//    val schemaUpload = Some(service.validate(id, schema))
-//
-//    Sync[F].delay(schemaUpload.fold(StatusCode.BadRequest.asLeft[Unit])(_.asRight[StatusCode]))
-//  }
 
+  private val uploadSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.uploadSchema) { case (id, schema) =>
+    val result = for {
+      _ <- service.uploadSchema(id, schema)
+    } yield UploadSuccess(id).asRight[(StatusCode, UploadError)]
 
-//  val routes: HttpRoutes[F] = getSchema <+> uploadSchema <+> validate
-  val routes: HttpRoutes[F] = getSchema
+    result.recoverWith {
+      case _: Throwable => Sync[F].pure(Left(StatusCode.BadRequest, UploadError(id, "upload failed")))
+    }
+  }
+
+  private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.validate) { case (id, schema) =>
+    val result = for {
+      _ <- service.validate(id, schema)
+    } yield ValidationSuccess(id).asRight[(StatusCode, JsonSchemaResponse.ValidationError)]
+
+    result.recoverWith {
+      case _: Throwable => Sync[F].pure(
+        Left(StatusCode.BadRequest, JsonSchemaResponse.ValidationError(id, "validation failed"))
+      )
+    }
+  }
+
+  val routes: HttpRoutes[F] = getSchema <+> uploadSchema <+> validate
 
 }
 
 object JsonSchemaAPI {
 
-  val getSchema: Endpoint[NonEmptyString, StatusCode, DummyResponse, Any] =
+  val getSchema: Endpoint[NonEmptyString, StatusCode, NonEmptyString, Any] =
     endpoint.get
       .in("schema")
       .in(path[NonEmptyString]("schema_id"))
       .errorOut(statusCode)
-      .out(jsonBody[DummyResponse].description("A JSON schema object"))
+      .out(
+//        jsonBody[DummyResponse].description("A JSON schema object")
+        plainBody[NonEmptyString].description("A JSON schema object")
+      )
       .description(
         "Returns a JSON object representing the schema if it's found for the provided id"
       )
 
-  val uploadSchema: Endpoint[(NonEmptyString, NonEmptyString), StatusCode, JsonSchemaResponse, Any] =
+  val uploadSchema: Endpoint[(NonEmptyString, NonEmptyString), (StatusCode, UploadError), UploadSuccess, Any] =
     endpoint.post
       .in("schema")
       .in(path[NonEmptyString]("schema_id"))
       .in(plainBody[NonEmptyString].description("A JSON schema object"))
-      .errorOut(statusCode)
       .out(
-        jsonBody[JsonSchemaResponse].description("A JSON upload response").example(UploadSuccess(id = "config-json"))
+        jsonBody[UploadSuccess]
+          .description("successful upload response")
+          .example(UploadSuccess(id = "config-json"))
+      )
+      .errorOut(statusCode)
+      .errorOut(
+        jsonBody[UploadError]
+          .description("A JSON validation error")
+          .example(UploadError("config-json", "invalid scheme"))
       )
       .description(
         "Returns a simple JSON response representing the status of the action (success/error)"
       )
 
-  val validate: Endpoint[NonEmptyString, StatusCode, JsonSchemaResponse, Any] =
+  val validate: Endpoint[(NonEmptyString, NonEmptyString), (StatusCode, JsonSchemaResponse.ValidationError), JsonSchemaResponse.ValidationSuccess, Any] =
     endpoint.post
       .in("validate")
       .in(path[NonEmptyString]("schema_id"))
-      .errorOut(statusCode)
+      .in(plainBody[NonEmptyString].description("A JSON schema object"))
       .out(
-        jsonBody[JsonSchemaResponse].description("A JSON validation response").example(JsonSchemaResponse.ValidationError("config-json", "missing field"))
+        jsonBody[JsonSchemaResponse.ValidationSuccess]
+          .description("Successful JSON schema validation response")
+      )
+      .errorOut(statusCode)
+      .errorOut(
+        jsonBody[JsonSchemaResponse.ValidationError]
+          .description("A JSON validation error")
+          .example(JsonSchemaResponse.ValidationError("config-json", "missing field"))
       )
       .description(
         "Returns a simple JSON response representing the status of the action (success/error)"

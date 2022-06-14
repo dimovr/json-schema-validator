@@ -32,15 +32,31 @@ object JsonSchemaResponse {
 
   case class UploadSuccess(id: SchemaId)
     extends JsonSchemaResponse(Action.UploadSchema, id, Status.Success, None)
+  object UploadSuccess {
+    implicit val encoder: Encoder[UploadSuccess] = deriveEncoder
+    implicit val decoder: Decoder[UploadSuccess] = deriveDecoder
+  }
 
   case class UploadError(id: SchemaId, message: ErrorMessage)
     extends JsonSchemaResponse(Action.UploadSchema, id, Status.Error, Some(message))
+  object UploadError {
+    implicit val encoder: Encoder[UploadError] = deriveEncoder
+    implicit val decoder: Decoder[UploadError] = deriveDecoder
+  }
 
   case class ValidationSuccess(id: SchemaId)
     extends JsonSchemaResponse(Action.ValidateDocument, id, Status.Success, None)
+  object ValidationSuccess {
+    implicit val encoder: Encoder[ValidationSuccess] = deriveEncoder
+    implicit val decoder: Decoder[ValidationSuccess] = deriveDecoder
+  }
 
   case class ValidationError(id: SchemaId, message: ErrorMessage)
     extends JsonSchemaResponse(Action.ValidateDocument, id, Status.Error, Some(message))
+  object ValidationError {
+    implicit val encoder: Encoder[ValidationError] = deriveEncoder
+    implicit val decoder: Decoder[ValidationError] = deriveDecoder
+  }
 
   implicit val decoder: Decoder[JsonSchemaResponse] = deriveDecoder[JsonSchemaResponse]
   implicit val encoder: Encoder[JsonSchemaResponse] = deriveEncoder[JsonSchemaResponse]
