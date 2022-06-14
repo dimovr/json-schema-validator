@@ -19,8 +19,8 @@ package object repo {
   type RepositoryProvider = NonEmptyString
   object RepositoryProvider extends RefinedTypeOps[RepositoryProvider, String] with CatsRefinedTypeOpsSyntax
 
-  type DirectoryName = NonEmptyString
-  object DirectoryName extends RefinedTypeOps[DirectoryName, String] with CatsRefinedTypeOpsSyntax
+  type Directory = NonEmptyString
+  object Directory extends RefinedTypeOps[Directory, String] with CatsRefinedTypeOpsSyntax
 
   type JDBCDriverName =
     String Refined MatchesRegex[W.`"^\\\\w+\\\\.[\\\\w\\\\d\\\\.]+[\\\\w\\\\d]+$"`.T]

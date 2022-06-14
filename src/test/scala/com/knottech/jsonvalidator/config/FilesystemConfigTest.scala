@@ -19,7 +19,7 @@ class FilesystemConfigTest extends FunSuite {
     val cfg = ConfigFactory.load(getClass().getClassLoader())
     ConfigSource.fromConfig(cfg).at(RepositoryConfig.CONFIG_KEY + "." + FilesystemConfig.CONFIG_KEY).load[FilesystemConfig] match {
       case Left(e)  => fail(e.toList.mkString(", "))
-      case Right(conf) => assert(conf.directory.value == "~/.json-schema-validator/")
+      case Right(conf) => assert(conf.directory.value == ".schemas")
     }
   }
 

@@ -8,7 +8,7 @@
 
 package com.knottech.jsonvalidator.config
 
-import com.knottech.jsonvalidator.repo.DirectoryName
+import com.knottech.jsonvalidator.repo.Directory
 import eu.timepit.refined.auto._
 import pureconfig._
 import eu.timepit.refined.pureconfig._
@@ -19,7 +19,7 @@ import pureconfig.generic.semiauto._
   *
   * @param directory The configured directory in which to store schemas.
   */
-final case class FilesystemConfig(directory: DirectoryName)
+final case class FilesystemConfig(directory: Directory)
 
 object FilesystemConfig {
 

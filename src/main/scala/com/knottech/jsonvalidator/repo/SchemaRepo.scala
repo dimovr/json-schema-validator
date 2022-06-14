@@ -30,7 +30,7 @@ object SchemaRepo {
       new IllegalArgumentException(s"Repository provider '$provider' is not supported")
 
     provider match {
-      case FilesystemConfig.CONFIG_KEY => IO(new FilesystemSchemaRepo(filesystem))
+      case FilesystemConfig.CONFIG_KEY => FilesystemSchemaRepo(filesystem)
       case other                       => IO.raiseError(providerNotSupported(other))
     }
   }

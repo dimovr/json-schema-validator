@@ -11,7 +11,6 @@ package com.knottech.jsonvalidator.repo
 import eu.timepit.refined.auto._
 import cats.effect.IO
 import com.knottech.jsonvalidator.models.JsonSchema
-import io.circe.ParsingFailure
 import munit.FunSuite
 
 final class SchemaRepoTest extends FunSuite {
@@ -21,13 +20,6 @@ final class SchemaRepoTest extends FunSuite {
   test("repo should get None if there is no schema for given id") {
     assert(
       repo.find("some-id").unsafeRunSync().isEmpty
-    )
-  }
-
-  test("repo should fail to insert schema if it's not a valid json") {
-    val invalidJson: JsonSchema = "{123}"
-    intercept[ParsingFailure](
-      repo.upsert("some-id", invalidJson).unsafeRunSync()
     )
   }
 

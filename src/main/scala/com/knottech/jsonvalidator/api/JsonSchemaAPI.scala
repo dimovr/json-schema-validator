@@ -16,6 +16,7 @@ import com.knottech.jsonvalidator.repo.SchemaRepo
 import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
+import io.circe.parser.parse
 import org.http4s._
 import org.http4s.dsl._
 import sttp.model._
@@ -45,6 +46,7 @@ final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
   private val uploadSchema: HttpRoutes[F] = Http4sServerInterpreter[F]()
     .toRoutes(JsonSchemaAPI.uploadSchema) { case (id, schema) =>
       val result = for {
+        _ <- Sync[F].fromEither(parse(schema))
         _ <- repo.upsert(id, schema)
       } yield UploadSuccess(id).asRight[UploadError]
 

@@ -9,7 +9,6 @@
 package com.knottech.jsonvalidator.repo
 
 import cats.effect.Sync
-import cats.implicits._
 import com.knottech.jsonvalidator.models.{ JsonSchema, SchemaId }
 import eu.timepit.refined.auto._
 
@@ -17,11 +16,10 @@ class SchemaRepoStub[F[_]: Sync] extends SchemaRepo[F] {
   private val schemas: scala.collection.mutable.Map[SchemaId, JsonSchema] =
     scala.collection.mutable.Map.empty
 
-  override def find(id: SchemaId): F[Option[JsonSchema]] = Sync[F].delay(schemas.get(id))
+  override def find(id: SchemaId): F[Option[JsonSchema]] =
+    Sync[F].delay(schemas.get(id))
 
   override def upsert(id: SchemaId, schema: JsonSchema): F[Unit] =
-    for {
-      _ <- Sync[F].fromEither(io.circe.parser.parse(schema))
-      _ <- Sync[F].delay(schemas += id -> schema)
-    } yield ()
+    Sync[F].delay(schemas += id -> schema)
+
 }
