@@ -1,4 +1,4 @@
-# json-validator #
+# json-schema-validator #
 
 TODO
 
