@@ -41,6 +41,7 @@ object SchemaValidator {
       override def validate(schema: JsonSchema, document: JsonDocument): F[Validated[List[String], Unit]] =
         for {
           cleanedUpDoc <- Sync[F].fromEither(cleanup(document))
+          _ = println(s"Cleaned up document: $cleanedUpDoc")
           report <- Sync[F].delay {
             val documentJson = (new ObjectMapper).readTree(cleanedUpDoc)
             val schemaJson   = (new ObjectMapper).readTree(schema)

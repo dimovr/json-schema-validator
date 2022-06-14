@@ -73,7 +73,6 @@ object FilesystemSchemaRepo {
       Resource
         .make(acquire)(release)
         .use(fos => IO.delay(fos.write(schema.value.getBytes())))
-        .map(_ => IO.unit)
     }
 
     private def path(schemaId: SchemaId): Path = Paths.get(s"$directory/$schemaId")

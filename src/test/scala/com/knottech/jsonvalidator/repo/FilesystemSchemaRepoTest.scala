@@ -11,7 +11,10 @@ package com.knottech.jsonvalidator.repo
 import eu.timepit.refined.auto._
 import com.knottech.jsonvalidator.config.FilesystemConfig
 import com.knottech.jsonvalidator.models.{JsonSchema, SchemaId}
+import eu.timepit.refined.api.Refined
 import munit.FunSuite
+
+import java.util.UUID
 
 final class FilesystemSchemaRepoTest extends FunSuite {
 
@@ -20,7 +23,7 @@ final class FilesystemSchemaRepoTest extends FunSuite {
   private val repo = FilesystemSchemaRepo(config).unsafeRunSync()
 
   test("should return None if no file has NOT been stored yet") {
-    val id: SchemaId = "123"
+    val id: SchemaId = Refined.unsafeApply(UUID.randomUUID().toString)
     assert(
       repo.find(id).unsafeRunSync().isEmpty
     )
