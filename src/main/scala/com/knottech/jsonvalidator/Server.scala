@@ -49,7 +49,10 @@ object Server extends IOApp.WithContext {
         ConfigSource.fromConfig(config).at(ValidationConfig.CONFIG_KEY).loadOrThrow[ValidationConfig]
       )
       _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
-      jsonValidationRoutes = new JsonSchemaAPI[IO](SchemaService.stub(validationConfig.schemaVersion))
+      jsonValidationRoutes = new JsonSchemaAPI[IO](
+        SchemaRepo.stub,
+        SchemaValidator.stub(validationConfig.schemaVersion)
+      )
       swagger          = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
       routes           = jsonValidationRoutes.routes <+> swagger.routes[IO]
       httpApp          = Router("/" -> routes).orNotFound

@@ -9,57 +9,58 @@
 package com.knottech.jsonvalidator.models
 
 import eu.timepit.refined.auto._
-import eu.timepit.refined.types.string.NonEmptyString
 import io.circe._
 import io.circe.generic.semiauto._
+import io.circe.generic.auto._
 import io.circe.refined._
 
 /**
   * A simple model for our hello world greetings.
   *
-  * @param action An action performed: uploadSchema or validateSchema.
+  * @param action An action performed: uploadSchema or validateDocument.
   * @param id The id of the json schema uploaded.
   * @param status The status of the action representing the outcome: success or error.
   * @param message  An error message if status is 'error' message for the user.
   */
-sealed abstract class JsonSchemaResponse(
-    action: Action,
-    id: SchemaId,
-    status: Status,
-    message: Option[ErrorMessage]
-)
+
+sealed trait JsonSchemaResponse
 
 object JsonSchemaResponse {
 
-  case class UploadSuccess(id: SchemaId)
-    extends JsonSchemaResponse(Action.UploadSchema, id, Status.Success, None)
+  case class UploadSuccess private (action: Action, id: SchemaId, status: Status) extends JsonSchemaResponse
   object UploadSuccess {
+    def apply(id: SchemaId): UploadSuccess =
+      UploadSuccess(Action.UploadSchema, id, Status.Success)
+
     implicit val encoder: Encoder[UploadSuccess] = deriveEncoder
     implicit val decoder: Decoder[UploadSuccess] = deriveDecoder
   }
 
-  case class UploadError(id: SchemaId, message: ErrorMessage)
-    extends JsonSchemaResponse(Action.UploadSchema, id, Status.Error, Some(message))
+  case class UploadError private (action: Action, id: SchemaId, status: Status, message: ErrorMessage) extends JsonSchemaResponse
   object UploadError {
+    def apply(id: SchemaId, message: ErrorMessage): UploadError =
+      UploadError(Action.UploadSchema, id, Status.Error, message)
+
     implicit val encoder: Encoder[UploadError] = deriveEncoder
     implicit val decoder: Decoder[UploadError] = deriveDecoder
   }
 
-  case class ValidationSuccess(id: SchemaId)
-    extends JsonSchemaResponse(Action.ValidateDocument, id, Status.Success, None)
+  case class ValidationSuccess private (action: Action, id: SchemaId, status: Status) extends JsonSchemaResponse
   object ValidationSuccess {
+    def apply(id: SchemaId): ValidationSuccess =
+      ValidationSuccess(Action.ValidateDocument, id, Status.Success)
+
     implicit val encoder: Encoder[ValidationSuccess] = deriveEncoder
     implicit val decoder: Decoder[ValidationSuccess] = deriveDecoder
   }
 
-  case class ValidationError(id: SchemaId, message: ErrorMessage)
-    extends JsonSchemaResponse(Action.ValidateDocument, id, Status.Error, Some(message))
+  case class ValidationError private (action: Action, id: SchemaId, status: Status, message: ErrorMessage) extends JsonSchemaResponse
   object ValidationError {
+    def apply(id: SchemaId, message: ErrorMessage): ValidationError =
+      ValidationError(Action.ValidateDocument, id, Status.Error, message)
+
     implicit val encoder: Encoder[ValidationError] = deriveEncoder
     implicit val decoder: Decoder[ValidationError] = deriveDecoder
   }
-
-  implicit val decoder: Decoder[JsonSchemaResponse] = deriveDecoder[JsonSchemaResponse]
-  implicit val encoder: Encoder[JsonSchemaResponse] = deriveEncoder[JsonSchemaResponse]
 
 }

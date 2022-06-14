@@ -11,9 +11,9 @@ package com.knottech.jsonvalidator.models
 import enumeratum.values.{StringCirceEnum, StringEnum, StringEnumEntry}
 
 sealed abstract class Status(val value: String) extends StringEnumEntry
-object Status extends StringEnum[Action] with StringCirceEnum[Action] {
-  case object Success     extends Status("success")
-  case object Error extends Status("error")
+object Status extends StringEnum[Status] with StringCirceEnum[Status] {
+  case object Success  extends Status("success")
+  case object Error    extends Status("error")
 
   val values = findValues
 }

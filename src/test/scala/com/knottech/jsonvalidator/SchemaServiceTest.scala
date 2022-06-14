@@ -19,15 +19,6 @@ final class SchemaServiceTest extends FunSuite {
   private val existingSchemaId: NonEmptyString = "1"
   private val jsonSchema: NonEmptyString = "{}"
 
-  private val schemaService = new SchemaService[IO] {
-    override def findSchema(id: NonEmptyString): IO[Option[NonEmptyString]] =
-      IO(if (id == existingSchemaId) Some(jsonSchema) else None)
-
-    override def uploadSchema(id: NonEmptyString, schema: NonEmptyString): IO[Unit] = IO.unit
-
-    override def validate(jsonString: NonEmptyString, schemaId: NonEmptyString): IO[Boolean] = IO.pure(true)
-  }
-
 //  test("get schema for existing id should return success response") {
 //
 //

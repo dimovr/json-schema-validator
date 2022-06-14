@@ -10,7 +10,7 @@ package com.knottech.jsonvalidator.api
 
 import cats.effect._
 import cats.implicits._
-import com.knottech.jsonvalidator.SchemaService
+import com.knottech.jsonvalidator.{SchemaRepo, SchemaValidator}
 import com.knottech.jsonvalidator.models.JsonSchemaResponse.{UploadError, UploadSuccess, ValidationSuccess}
 import com.knottech.jsonvalidator.models.{JsonSchema, _}
 import eu.timepit.refined.auto._
@@ -27,41 +27,46 @@ import sttp.tapir.server.http4s._
 import sttp.tapir.openapi.circe.yaml._
 
 final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
-    service: SchemaService[F]
+                                                                  repo: SchemaRepo[F],
+                                                                  validator: SchemaValidator[F]
 ) extends Http4sDsl[F] {
 
-  private val getSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.getSchema) { id =>
-    for {
-      maybeSchema <- service.findSchema(id)
-      result <- Sync[F].delay(
-        maybeSchema.fold(StatusCode.NotFound.asLeft[NonEmptyString])(_.asRight[StatusCode])
-      )
-    } yield result
-  }
-
-  private val uploadSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.uploadSchema) { case (id, schema) =>
-    val result = for {
-      _ <- service.uploadSchema(id, schema)
-    } yield UploadSuccess(id).asRight[UploadError]
-
-    result.recoverWith {
-      case _: Throwable => Sync[F].pure(Left(UploadError(id, "upload failed")))
+  private val getSchema: HttpRoutes[F] = Http4sServerInterpreter[F]()
+    .toRoutes(JsonSchemaAPI.getSchema) { id =>
+      for {
+        maybeSchema <- repo.find(id)
+        result <- Sync[F].delay(
+          maybeSchema.fold(StatusCode.NotFound.asLeft[NonEmptyString])(_.asRight[StatusCode])
+        )
+      } yield result
     }
-  }
 
-  private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.validate) { case (id, schema) =>
-    def validationSuccess = ValidationSuccess(id).asRight[JsonSchemaResponse.ValidationError]
-    def validationFailed =
-      JsonSchemaResponse.ValidationError(id, "validation failed").asLeft[ValidationSuccess]
+  private val uploadSchema: HttpRoutes[F] = Http4sServerInterpreter[F]()
+    .toRoutes(JsonSchemaAPI.uploadSchema) { case (id, schema) =>
+      val result = for {
+        _ <- repo.upsert(id, schema)
+      } yield UploadSuccess(id).asRight[UploadError]
 
-    val result = for {
-      valid <- service.validate(id, schema)
-    } yield if (valid) validationSuccess else validationFailed
-
-    result.recoverWith {
-      case _: Throwable => Sync[F].pure(validationFailed)
+      result.recoverWith {
+        case _: Throwable => Sync[F].pure(Left(UploadError(id, "upload failed")))
+      }
     }
-  }
+
+  private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]()
+    .toRoutes(JsonSchemaAPI.validate) { case (id, schema) =>
+      def validationSuccess = ValidationSuccess(id).asRight[JsonSchemaResponse.ValidationError]
+      def validationError = JsonSchemaResponse.ValidationError(id, "validation failed").asLeft[ValidationSuccess]
+
+      val result = for {
+        schemaOpt <- repo.find(id)
+        schema    <- Sync[F].fromOption(schemaOpt, new RuntimeException("missing schema"))
+        valid     <- validator.validate(id, schema)
+      } yield if (valid) validationSuccess else validationError
+
+      result.recoverWith {
+        case _: Throwable => Sync[F].pure(validationError)
+      }
+    }
 
   val routes: HttpRoutes[F] = getSchema <+> uploadSchema <+> validate
 

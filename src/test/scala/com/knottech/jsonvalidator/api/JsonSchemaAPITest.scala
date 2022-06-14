@@ -10,9 +10,8 @@ package com.knottech.jsonvalidator.api
 
 import cats.effect._
 import com.github.fge.jsonschema.SchemaVersion
-import com.knottech.jsonvalidator.SchemaService
+import com.knottech.jsonvalidator.{SchemaRepo, SchemaValidator}
 import com.knottech.jsonvalidator.models.JsonSchemaResponse._
-import com.knottech.jsonvalidator.models._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
 import io.circe.Json
@@ -24,8 +23,6 @@ import org.http4s.implicits._
 import org.http4s.server.Router
 
 final class JsonSchemaAPITest extends CatsEffectSuite {
-
-  implicit def decodeJsonSchemaResponse: EntityDecoder[IO, JsonSchemaResponse] = jsonOf
 
   implicit def decodeNonEmptyString[F[_]: Sync]: EntityDecoder[F, NonEmptyString] =
     EntityDecoder.text.map(NonEmptyString.unsafeFrom)
@@ -40,7 +37,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(_) =>
         fail("Could not generate valid URI!")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
@@ -61,7 +58,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
@@ -89,7 +86,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
@@ -116,7 +113,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(_) =>
         fail("Could not generate valid URI!")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -137,7 +134,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -163,7 +160,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
@@ -191,7 +188,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
@@ -220,7 +217,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(_) =>
         fail("Could not generate valid URI!")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -241,7 +238,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -267,7 +264,7 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaRepo.stub, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
@@ -290,11 +287,12 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
     val schemaBody =
       """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
 
-    Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
+    Uri.fromString(Uri.encode(s"/validate/$schemaId")) match {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        val repo = SchemaRepo.stub[IO]
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](repo, SchemaValidator.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
@@ -303,7 +301,11 @@ final class JsonSchemaAPITest extends CatsEffectSuite {
         val expectedResponse = ValidationSuccess(schemaId)
 
         val response = service.orNotFound.run(request)
+        val schema: NonEmptyString =
+          """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
+
         val test = for {
+          _      <- repo.upsert(schemaId, schema)
           result <- response
           body   <- result.as[ValidationSuccess]
         } yield (result.status, body)
