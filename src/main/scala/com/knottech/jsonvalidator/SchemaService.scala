@@ -11,47 +11,51 @@ package com.knottech.jsonvalidator
 import cats.effect.Sync
 import cats.implicits._
 import eu.timepit.refined.auto._
-import eu.timepit.refined.types.string.NonEmptyString
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.fge.jsonschema.SchemaVersion
 import com.github.fge.jsonschema.cfg.ValidationConfiguration
 import com.github.fge.jsonschema.main.{JsonSchemaFactory, JsonValidator}
+import com.knottech.jsonvalidator.models.{JsonObject, JsonSchema, SchemaId}
 
 trait SchemaService[F[_]] {
 
-  def findSchema(id: NonEmptyString): F[Option[NonEmptyString]]
-  def uploadSchema(id: NonEmptyString, schema: NonEmptyString): F[Unit]
-  def validate(schemaId: NonEmptyString, jsonString: NonEmptyString): F[Boolean]
+  def findSchema(id: SchemaId): F[Option[JsonSchema]]
+  def uploadSchema(id: SchemaId, schema: JsonSchema): F[Unit]
+  def validate(schemaId: SchemaId, jsonToValidate: JsonObject): F[Boolean]
 
 }
 
 object SchemaService {
 
-  private def validator(version: SchemaVersion): JsonValidator = {
-    val config = ValidationConfiguration.newBuilder().setDefaultVersion(version).freeze
-    JsonSchemaFactory.newBuilder().setValidationConfiguration(config).freeze.getValidator
-  }
+  def stub[F[_]: Sync](version: SchemaVersion): SchemaService[F] = new SchemaService[F] {
 
-  def stub[F[_]: Sync]: SchemaService[F] = new SchemaService[F] {
+    private val validator: JsonValidator = {
+      val config = ValidationConfiguration.newBuilder().setDefaultVersion(version).freeze
+      JsonSchemaFactory.newBuilder().setValidationConfiguration(config).freeze.getValidator
+    }
 
-    private val schemaId: NonEmptyString = "config-json"
-      private val schema: NonEmptyString = """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
+    private val schemaId: SchemaId = "config-json"
+    private val schema: JsonSchema = """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
 
-    private val schemas: Map[NonEmptyString, NonEmptyString] = Map(schemaId -> schema)
+    import scala.collection.mutable.{Map => MutMap}
+    private val schemas: MutMap[SchemaId, JsonSchema] = MutMap(schemaId -> schema)
 
-    override def findSchema(id: NonEmptyString): F[Option[NonEmptyString]] =
+    override def findSchema(id: SchemaId): F[Option[JsonSchema]] =
       Sync[F].delay(schemas.get(id))
 
-    override def uploadSchema(id: NonEmptyString, schema: NonEmptyString): F[Unit] =
-      Sync[F].unit
+    override def uploadSchema(id: SchemaId, schema: JsonSchema): F[Unit] =
+      for {
+        _ <- Sync[F].fromEither(io.circe.parser.parse(schema))
+        _ <- Sync[F].delay(schemas.addOne(id -> schema))
+      } yield ()
 
-    override def validate(schemaId: NonEmptyString, jsonString: NonEmptyString): F[Boolean] =
+    override def validate(schemaId: SchemaId, jsonToValidate: JsonObject): F[Boolean] =
       for {
         maybeSchema <- findSchema(schemaId)
         schema      <- Sync[F].fromOption(maybeSchema, new RuntimeException(s"No schema for id $schemaId"))
-        jsonNode = (new ObjectMapper).readTree(jsonString)
-        schemeNode = (new ObjectMapper).readTree(schema)
-        result = validator(SchemaVersion.DRAFTV4).validate(jsonNode, schemeNode)
+        jsonNode    = (new ObjectMapper).readTree(jsonToValidate)
+        schemeNode  = (new ObjectMapper).readTree(schema)
+        result      = validator.validate(jsonNode, schemeNode)
       } yield result.isSuccess
 
   }

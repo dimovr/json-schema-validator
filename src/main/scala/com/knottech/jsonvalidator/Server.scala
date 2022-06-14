@@ -11,9 +11,6 @@ package com.knottech.jsonvalidator
 import java.util.concurrent.{ExecutorService, Executors}
 import cats.effect._
 import cats.implicits._
-import com.github.fge.jsonschema.SchemaVersion
-import com.github.fge.jsonschema.cfg.ValidationConfiguration
-import com.github.fge.jsonschema.main.{JsonSchemaFactory, JsonValidator}
 import com.typesafe.config._
 import com.knottech.jsonvalidator.api._
 import com.knottech.jsonvalidator.config._
@@ -52,7 +49,7 @@ object Server extends IOApp.WithContext {
         ConfigSource.fromConfig(config).at(ValidationConfig.CONFIG_KEY).loadOrThrow[ValidationConfig]
       )
       _ <- migrator.migrate(dbConfig.url, dbConfig.user, dbConfig.pass)
-      jsonValidationRoutes = new JsonSchemaAPI[IO](SchemaService.stub)
+      jsonValidationRoutes = new JsonSchemaAPI[IO](SchemaService.stub(validationConfig.schemaVersion))
       swagger          = new SwaggerHttp4s(JsonSchemaAPI.openApiDocs)
       routes           = jsonValidationRoutes.routes <+> swagger.routes[IO]
       httpApp          = Router("/" -> routes).orNotFound

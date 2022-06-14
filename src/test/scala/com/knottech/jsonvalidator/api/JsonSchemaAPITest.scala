@@ -9,6 +9,7 @@
 package com.knottech.jsonvalidator.api
 
 import cats.effect._
+import com.github.fge.jsonschema.SchemaVersion
 import com.knottech.jsonvalidator.SchemaService
 import com.knottech.jsonvalidator.models.JsonSchemaResponse._
 import com.knottech.jsonvalidator.models._
@@ -22,13 +23,15 @@ import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.server.Router
 
-class JsonSchemaAPITest extends CatsEffectSuite {
+final class JsonSchemaAPITest extends CatsEffectSuite {
 
   implicit def decodeJsonSchemaResponse: EntityDecoder[IO, JsonSchemaResponse] = jsonOf
 
   implicit def decodeNonEmptyString[F[_]: Sync]: EntityDecoder[F, NonEmptyString] =
     EntityDecoder.text.map(NonEmptyString.unsafeFrom)
 
+  private def schemaVersion = SchemaVersion.DRAFTV4
+  
   // GET /schema/{schema_id}
   test("when parameter 'schema_id' is missing for GET /schema/{schema_id}") {
     val expectedStatusCode = HttpStatus.NotFound
@@ -37,7 +40,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(_) =>
         fail("Could not generate valid URI!")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
@@ -58,7 +61,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
@@ -86,7 +89,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub[IO]).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = uri
@@ -113,7 +116,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(_) =>
         fail("Could not generate valid URI!")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -134,7 +137,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -150,33 +153,32 @@ class JsonSchemaAPITest extends CatsEffectSuite {
     }
   }
 
-  // todo: add once validation is implemented
-//  test("when parameter 'schema_id' is valid BUT body is INVALID for POST /schema/{schema_id}") {
-//    val expectedStatusCode = HttpStatus.Ok
-//
-//    val schemaId: NonEmptyString = "config-json"
-//    val schemaBody = "invalid-json"
-//
-//    Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
-//      case Left(e) =>
-//        fail(s"Could not generate valid URI: $e")
-//      case Right(uri) =>
-//        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub[IO]).routes)
-//        val request = Request[IO](
-//          method = Method.POST,
-//          uri = uri,
-//        ).withEntity(schemaBody)
-//
-//        val expectedResponse = UploadSuccess(schemaId)
-//
-//        val response = service.orNotFound.run(request)
-//        val test = for {
-//          result <- response
-//          body   <- result.as[UploadSuccess]
-//        } yield (result.status, body)
-//        test.assertEquals((expectedStatusCode, expectedResponse))
-//    }
-//  }
+  test("when parameter 'schema_id' is valid BUT body is INVALID for POST /schema/{schema_id}") {
+    val expectedStatusCode = HttpStatus.BadRequest
+
+    val schemaId: NonEmptyString = "config-json"
+    val schemaBody = "invalid-json"
+
+    Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
+      case Left(e) =>
+        fail(s"Could not generate valid URI: $e")
+      case Right(uri) =>
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        val request = Request[IO](
+          method = Method.POST,
+          uri = uri,
+        ).withEntity(schemaBody)
+
+        val expectedResponse = UploadError(schemaId, "upload failed")
+
+        val response = service.orNotFound.run(request)
+        val test = for {
+          result <- response
+          body   <- result.as[UploadError]
+        } yield (result.status, body)
+        test.assertEquals((expectedStatusCode, expectedResponse))
+    }
+  }
 
   test("when parameter 'schema_id' is valid and body is valid for POST /schema/{schema_id}") {
     val expectedStatusCode = HttpStatus.Ok
@@ -189,7 +191,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub[IO]).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
@@ -214,11 +216,11 @@ class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is missing for POST /validate/{schema_id}") {
     val expectedStatusCode = HttpStatus.NotFound
 
-    Uri.fromString("/schema") match {
+    Uri.fromString("/validate") match {
       case Left(_) =>
         fail("Could not generate valid URI!")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -235,11 +237,11 @@ class JsonSchemaAPITest extends CatsEffectSuite {
   test("when parameter 'schema_id' is invalid for POST /validate/{schema_id}") {
     val expectedStatusCode = HttpStatus.NotFound
 
-    Uri.fromString("/schema/") match {
+    Uri.fromString("/validate/") match {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri
@@ -255,34 +257,32 @@ class JsonSchemaAPITest extends CatsEffectSuite {
     }
   }
 
-  // todo: add once validation is implemented
-  //  test("when parameter 'schema_id' is valid BUT body is INVALID for POST /validate/{schema_id}") {
-  //    val expectedStatusCode = HttpStatus.Ok
-  //
-  //    val schemaId: NonEmptyString = "config-json"
-  //    val schemaBody = "invalid-json"
-  //
-  //    Uri.fromString(Uri.encode(s"/schema/$schemaId")) match {
-  //      case Left(e) =>
-  //        fail(s"Could not generate valid URI: $e")
-  //      case Right(uri) =>
-  //        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub[IO]).routes)
-  //        val request = Request[IO](
-  //          method = Method.POST,
-  //          uri = uri,
-  //        ).withEntity(schemaBody)
-  //
-  //        val expectedResponse = UploadSuccess(schemaId)
-  //
-  //        val response = service.orNotFound.run(request)
-  //        val test = for {
-  //          result <- response
-  //          body   <- result.as[UploadSuccess]
-  //        } yield (result.status, body)
-  //        test.assertEquals((expectedStatusCode, expectedResponse))
-  //    }
-  //  }
+  test("when parameter 'schema_id' is valid and body is NOT a valid json for POST /validate/{schema_id}") {
+    val expectedStatusCode = HttpStatus.BadRequest
 
+    val schemaId: NonEmptyString = "config-json"
+    val schemaBody = "abc"
+
+    Uri.fromString(Uri.encode(s"/validate/$schemaId")) match {
+      case Left(e) =>
+        fail(s"Could not generate valid URI: $e")
+      case Right(uri) =>
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
+        val request = Request[IO](
+          method = Method.POST,
+          uri = uri,
+        ).withEntity(schemaBody)
+
+        val expectedResponse = ValidationError(schemaId, "validation failed")
+
+        val response = service.orNotFound.run(request)
+        val test = for {
+          result <- response
+          body   <- result.as[ValidationError]
+        } yield (result.status, body)
+        test.assertEquals((expectedStatusCode, expectedResponse))
+    }
+  }
   test("when parameter 'schema_id' is valid and body is valid for POST /validate/{schema_id}") {
     val expectedStatusCode = HttpStatus.Ok
 
@@ -294,18 +294,18 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(uri) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub[IO]).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub(schemaVersion)).routes)
         val request = Request[IO](
           method = Method.POST,
           uri = uri,
         ).withEntity(schemaBody)
 
-        val expectedResponse = UploadSuccess(schemaId)
+        val expectedResponse = ValidationSuccess(schemaId)
 
         val response = service.orNotFound.run(request)
         val test = for {
           result <- response
-          body   <- result.as[UploadSuccess]
+          body   <- result.as[ValidationSuccess]
         } yield (result.status, body)
         test.assertEquals((expectedStatusCode, expectedResponse))
     }

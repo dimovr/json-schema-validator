@@ -9,6 +9,7 @@
 package com.knottech.jsonvalidator.models
 
 import eu.timepit.refined.auto._
+import eu.timepit.refined.types.string.NonEmptyString
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.refined._

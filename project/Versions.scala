@@ -15,4 +15,5 @@ object Versions {
   val refined         = "0.9.29"
   val scalaCheck      = "1.15.4"
   val tapir           = "0.18.3"
+  val scalamock       = "5.1.0"
 }

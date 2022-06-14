@@ -38,6 +38,7 @@ object Dependencies {
   val tapirOpenApiYaml  = "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % Versions.tapir
   val tapirRefined      = "com.softwaremill.sttp.tapir" %% "tapir-refined"            % Versions.tapir
   val tapirSwaggerUi    = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-http4s"  % Versions.tapir
+  val scalaMock         = "org.scalamock"               %% "scalamock"                % Versions.scalamock
   
   val all = Seq(
     jsonValidator,
@@ -80,6 +81,7 @@ object Dependencies {
     munitCatsEffect   % Test,
     munitScalaCheck   % Test,
     refinedScalaCheck % Test,
-    scalaCheck        % Test
+    scalaCheck        % Test,
+    scalaMock         % Test
   )
 }
