@@ -76,13 +76,13 @@ inThisBuild(
 // Projects
 // *****************************************************************************
 
-lazy val jsonvalidator =
+lazy val jsonSchemaValidator =
   project
     .in(file("."))
     .enablePlugins(AutomateHeaderPlugin)
     .configs(IntegrationTest)
     .settings(
-      name := "json-validator"
+      name := "json-schema-validator"
     )
     .settings(settings)
     .settings(

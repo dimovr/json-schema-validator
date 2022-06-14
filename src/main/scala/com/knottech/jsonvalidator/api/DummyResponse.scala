@@ -8,10 +8,13 @@
 
 package com.knottech.jsonvalidator.api
 
+import eu.timepit.refined.auto._
+import eu.timepit.refined.types.string.NonEmptyString
 import io.circe._
 import io.circe.generic.semiauto._
+import io.circe.refined._
 
-final case class DummyResponse(schema: String)
+final case class DummyResponse(schema: NonEmptyString)
 object DummyResponse {
   implicit val encoder: Encoder[DummyResponse] = deriveEncoder
   implicit val decoder: Decoder[DummyResponse] = deriveDecoder

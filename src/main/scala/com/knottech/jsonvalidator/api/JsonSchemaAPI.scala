@@ -28,32 +28,49 @@ import sttp.tapir.server.http4s._
 import sttp.tapir.openapi.circe.yaml._
 
 final class JsonSchemaAPI[F[_]: Concurrent: ContextShift: Timer](
-    service: SchemaService
+    service: SchemaService[F]
 ) extends Http4sDsl[F] {
 
   implicit def decodeJsonSchemaResponse: EntityDecoder[F, JsonSchemaResponse] = jsonOf
   implicit def encodeJsonSchemaResponse: EntityEncoder[F, JsonSchemaResponse] = jsonEncoderOf
 
   private val getSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.getSchema) { id =>
-
-    val maybeSchema = service.findSchema(id).map(DummyResponse.apply)
-
-    Sync[F].delay(maybeSchema.fold(StatusCode.BadRequest.asLeft[DummyResponse])(_.asRight[StatusCode]))
+    for {
+      maybeSchema <- service.findSchema(id)
+      schema = maybeSchema.map(DummyResponse.apply)
+      result <- Sync[F].delay(
+        schema.fold(StatusCode.BadRequest.asLeft[DummyResponse])(_.asRight[StatusCode])
+      )
+    } yield result
   }
+//
+//  private val uploadSchema: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.uploadSchema) { case (id, schema) =>
+//
+//    val schemaUpload = Some(service.uploadSchema(id, schema))
+//
+//    Sync[F].delay(schemaUpload.fold(StatusCode.BadRequest.asLeft[Unit])(_.asRight[StatusCode]))
+//  }
+//
+//  private val validate: HttpRoutes[F] = Http4sServerInterpreter[F]().toRoutes(JsonSchemaAPI.validate) { case (id, schema) =>
+//
+//    val schemaUpload = Some(service.validate(id, schema))
+//
+//    Sync[F].delay(schemaUpload.fold(StatusCode.BadRequest.asLeft[Unit])(_.asRight[StatusCode]))
+//  }
 
+
+//  val routes: HttpRoutes[F] = getSchema <+> uploadSchema <+> validate
   val routes: HttpRoutes[F] = getSchema
 
 }
 
 object JsonSchemaAPI {
 
-//  val getSchema: Endpoint[NonEmptyString, StatusCode, String, Any] =
   val getSchema: Endpoint[NonEmptyString, StatusCode, DummyResponse, Any] =
     endpoint.get
       .in("schema")
       .in(path[NonEmptyString]("schema_id"))
       .errorOut(statusCode)
-//      .out(stringBody.description("A JSON schema object"))
       .out(jsonBody[DummyResponse].description("A JSON schema object"))
       .description(
         "Returns a JSON object representing the schema if it's found for the provided id"
@@ -72,7 +89,7 @@ object JsonSchemaAPI {
         "Returns a simple JSON response representing the status of the action (success/error)"
       )
 
-  val validateSchema: Endpoint[NonEmptyString, StatusCode, JsonSchemaResponse, Any] =
+  val validate: Endpoint[NonEmptyString, StatusCode, JsonSchemaResponse, Any] =
     endpoint.post
       .in("validate")
       .in(path[NonEmptyString]("schema_id"))
@@ -84,9 +101,9 @@ object JsonSchemaAPI {
         "Returns a simple JSON response representing the status of the action (success/error)"
       )
 
-  val endpoints = List(getSchema, uploadSchema, validateSchema)
+  private val endpoints = List(getSchema, uploadSchema, validate)
 
   lazy val openApiDocs: String =
-    OpenAPIDocsInterpreter().toOpenAPI(endpoints, "json-validator", "1.0.0").toYaml
+    OpenAPIDocsInterpreter().toOpenAPI(endpoints, "json-schema-validator", "1.0.0").toYaml
 
 }

@@ -8,18 +8,20 @@
 
 package com.knottech.jsonvalidator
 
+import cats.effect.Sync
+import cats.implicits._
 import eu.timepit.refined.auto._
 import eu.timepit.refined.types.string.NonEmptyString
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.fge.jsonschema.SchemaVersion
 import com.github.fge.jsonschema.cfg.ValidationConfiguration
 import com.github.fge.jsonschema.main.{JsonSchemaFactory, JsonValidator}
 
-//trait SchemaService[F[_]] {
-trait SchemaService {
+trait SchemaService[F[_]] {
 
-  def findSchema(id: NonEmptyString): Option[String]
-  def uploadSchema(): Unit
-  def validate(): Unit
+  def findSchema(id: NonEmptyString): F[Option[NonEmptyString]]
+  def uploadSchema(id: NonEmptyString, schema: NonEmptyString): F[Unit]
+  def validate(schemaId: NonEmptyString, jsonString: NonEmptyString): F[Boolean]
 
 }
 
@@ -30,20 +32,28 @@ object SchemaService {
     JsonSchemaFactory.newBuilder().setValidationConfiguration(config).freeze.getValidator
   }
 
-  def stub: SchemaService = new SchemaService {
+  def stub[F[_]: Sync]: SchemaService[F] = new SchemaService[F] {
 
     private val schemaId: NonEmptyString = "config-json"
-    //  private val schema: NonEmptyString = """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
-    private val schema: String = """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
+      private val schema: NonEmptyString = """{ "$schema": "http://json-schema.org/draft-04/schema#", "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" }, "timeout": { "type": "integer", "minimum": 0, "maximum": 32767 }, "chunks": { "type": "object", "properties": { "size": { "type": "integer" }, "number": { "type": "integer" } }, "required": ["size"] } }, "required": ["source", "destination"] }"""
 
-    private val schemas: Map[NonEmptyString, String] = Map(schemaId -> schema)
-    //  private val schemas: Map[NonEmptyString, NonEmptyString] = Map(schemaId -> schema)
+    private val schemas: Map[NonEmptyString, NonEmptyString] = Map(schemaId -> schema)
 
-    override def findSchema(id: NonEmptyString): Option[String] =
-      schemas.get(id)
+    override def findSchema(id: NonEmptyString): F[Option[NonEmptyString]] =
+      Sync[F].delay(schemas.get(id))
 
-    override def uploadSchema(): Unit = ()
-    override def validate():  Unit = ()
+    override def uploadSchema(id: NonEmptyString, schema: NonEmptyString): F[Unit] =
+      Sync[F].unit
+
+    override def validate(schemaId: NonEmptyString, jsonString: NonEmptyString): F[Boolean] =
+      for {
+        maybeSchema <- findSchema(schemaId)
+        schema      <- Sync[F].fromOption(maybeSchema, new RuntimeException(s"No schema for id $schemaId"))
+        jsonNode = (new ObjectMapper).readTree(jsonString)
+        schemeNode = (new ObjectMapper).readTree(schema)
+        result = validator(SchemaVersion.DRAFTV4).validate(jsonNode, schemeNode)
+      } yield result.isSuccess
+
   }
 
 }

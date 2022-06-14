@@ -82,7 +82,7 @@ class JsonSchemaAPITest extends CatsEffectSuite {
       case Left(e) =>
         fail(s"Could not generate valid URI: $e")
       case Right(u) =>
-        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub).routes)
+        def service: HttpRoutes[IO] = Router("/" -> new JsonSchemaAPI[IO](SchemaService.stub[IO]).routes)
         val request = Request[IO](
           method = Method.GET,
           uri = u
