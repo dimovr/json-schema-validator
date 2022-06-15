@@ -131,9 +131,15 @@ And expects it conforms to the following JSON Schema config-schema.json:
 
 To check that it really fits the schema:
 
-The user should upload the JSON Schema: ```curl http://localhost:8080/schema/config-schema -X POST -d @config-schema.json```
-The server should respond with: `{"action": "uploadSchema", "id": "config-schema", "status": "success"}` and status code `201`
-The user should upload the JSON document to validate it `curl http://localhost:8080/validate/config-schema -X POST -d @config.json`
+The user should upload the JSON Schema:
+ ```curl http://localhost:8080/schema/config-schema -X POST -d @config-schema.json```
+
+The server should respond with:
+`{"action": "uploadSchema", "id": "config-schema", "status": "success"}` and status code `201`.
+
+The user should upload the JSON document to validate it
+ `curl http://localhost:8080/validate/config-schema -X POST -d @config.json`
+
 The server should "clean" the uploaded JSON document to remove keys for which the value is `null`:
 ```{
   "source": "/home/alice/image.iso",
@@ -143,6 +149,7 @@ The server should "clean" the uploaded JSON document to remove keys for which th
   }
 }
 ```
+
 The server should respond with: `{"action": "validateDocument", "id": "config-schema", "status": "success"}` and status code `200`
 
 
